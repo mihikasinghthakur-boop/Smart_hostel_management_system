@@ -5,6 +5,7 @@ FROM ubuntu:22.04 AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libboost-all-dev \
+    libasio-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -12,7 +13,7 @@ COPY crow_all.h .
 COPY main.cpp .
 COPY templates/ templates/
 
-# Build with g++ directly using Boost
+# Build with g++ directly
 RUN g++ -std=c++17 -O2 \
     -I. \
     main.cpp \
