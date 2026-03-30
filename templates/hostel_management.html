@@ -901,16 +901,9 @@
           <label class="form-label">Password</label>
           <input type="password" class="form-input" placeholder="••••••••" id="loginPass">
         </div>
-        <div class="form-group">
-          <label class="form-label">Login As</label>
-          <select class="form-input" id="loginRole">
-            <option value="student">Student</option>
-            <option value="admin">Administrator</option>
-          </select>
-        </div>
         <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:15px" onclick="doLogin()">Sign In</button>
-        <div class="auth-divider">or continue with</div>
-        <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="guestLogin()">Continue as Guest</button>
+        <div class="auth-divider">or try admin demo</div>
+        <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="guestLogin()">🔑 Use Admin Demo</button>
       </div>
 
       <!-- Register Form -->
@@ -1314,15 +1307,9 @@ function updateAdminUI() {
   if (allocBtn) allocBtn.style.display = isAdmin() ? '' : 'none';
 }
 
-// Kept static for visual purposes (Leaves, Notices, Rooms)
+// Room data (purely visual - generated client-side)
 const state = {
-  rooms: generateRooms(),
-  notices: [
-    { title: 'Water Supply Disruption', tag: 'urgent', content: 'Water supply will be unavailable on 2nd April from 6AM–12PM due to pipeline maintenance. Please store water in advance.', author: 'Admin', date: '30 Mar 2026' },
-  ],
-  leaves: [
-    { name: 'Sneha Joshi', id: 'STU005', from: '2026-04-02', to: '2026-04-05', reason: 'Family function at home', status: 'pending' },
-  ]
+  rooms: generateRooms()
 };
 
 function generateRooms() {
@@ -1358,13 +1345,12 @@ function navigate(page) {
   closeSidebar();
   window.scrollTo(0, 0);
 
-  // Trigger C++ Fetches when navigating
+  // Trigger API fetches when navigating
   if (page === 'allocation') fetchAllocations();
   if (page === 'complaints') fetchComplaints();
-  
+  if (page === 'notice') fetchNotices();
+  if (page === 'leave') fetchLeaves();
   if (page === 'rooms') renderRooms('all');
-  if (page === 'notice') renderNotices();
-  if (page === 'leave') renderLeaves();
   if (page === 'landing') animateCounters();
 
   updateAdminUI();
@@ -1519,26 +1505,34 @@ function switchAuthTab(tab) {
   document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
 }
 
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('loginEmail').value;
   const pass = document.getElementById('loginPass').value;
-  const role = document.getElementById('loginRole').value;
   if (!email || !pass) { showToast('Please fill all fields'); return; }
 
-  loggedIn = true;
-  currentUser = { email, role };
-  const name = email.split('@')[0];
-  document.getElementById('userChip').style.display = 'flex';
-  document.getElementById('logoutBtn').style.display = 'block';
-  document.getElementById('userName').textContent = name;
-  document.getElementById('userRole').textContent = role === 'admin' ? 'Administrator' : 'Student';
-  document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
-  showToast('Logged in as ' + name);
-  updateAdminUI();
-  navigate('dashboard');
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Login failed'); return; }
+
+    loggedIn = true;
+    currentUser = { email: data.email, role: data.role, name: data.name, id: data.student_id };
+    document.getElementById('userChip').style.display = 'flex';
+    document.getElementById('logoutBtn').style.display = 'block';
+    document.getElementById('userName').textContent = data.name;
+    document.getElementById('userRole').textContent = data.role === 'admin' ? 'Administrator' : 'Student';
+    document.getElementById('userAvatar').textContent = data.name.charAt(0).toUpperCase();
+    showToast('Logged in as ' + data.name);
+    updateAdminUI();
+    navigate('dashboard');
+  } catch (err) { showToast('Connection error'); console.error(err); }
 }
 
-function doRegister() {
+async function doRegister() {
   const first = document.getElementById('regFirst').value;
   const last = document.getElementById('regLast').value;
   const sid = document.getElementById('regId').value;
@@ -1547,28 +1541,33 @@ function doRegister() {
   if (!first || !last || !sid || !email || !pass) { showToast('Please fill all fields'); return; }
   if (pass.length < 8) { showToast('Password must be at least 8 characters'); return; }
 
-  loggedIn = true;
-  currentUser = { email, role: 'student', name: first + ' ' + last, id: sid };
-  document.getElementById('userChip').style.display = 'flex';
-  document.getElementById('logoutBtn').style.display = 'block';
-  document.getElementById('userName').textContent = first + ' ' + last;
-  document.getElementById('userRole').textContent = 'Student';
-  document.getElementById('userAvatar').textContent = first.charAt(0).toUpperCase();
-  showToast('Account created successfully!');
-  updateAdminUI();
-  navigate('dashboard');
+  try {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass, name: first + ' ' + last, student_id: sid })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Registration failed'); return; }
+
+    loggedIn = true;
+    currentUser = { email: data.email, role: 'student', name: data.name, id: data.student_id };
+    document.getElementById('userChip').style.display = 'flex';
+    document.getElementById('logoutBtn').style.display = 'block';
+    document.getElementById('userName').textContent = data.name;
+    document.getElementById('userRole').textContent = 'Student';
+    document.getElementById('userAvatar').textContent = first.charAt(0).toUpperCase();
+    showToast('Account created successfully!');
+    updateAdminUI();
+    navigate('dashboard');
+  } catch (err) { showToast('Connection error'); console.error(err); }
 }
 
 function guestLogin() {
-  loggedIn = true;
-  currentUser = { name: 'Mihika', role: 'admin' };
-  document.getElementById('userChip').style.display = 'flex';
-  document.getElementById('logoutBtn').style.display = 'block';
-  document.getElementById('userName').textContent = "Mihika";
-  document.getElementById('userRole').textContent = "Admin";
-  document.getElementById('userAvatar').textContent = "M";
-  updateAdminUI();
-  navigate('dashboard');
+  // Quick-fill admin credentials for demo
+  document.getElementById('loginEmail').value = 'admin@nestiq.com';
+  document.getElementById('loginPass').value = 'admin123';
+  showToast('Admin credentials filled — click Sign In');
 }
 
 function logout() {
@@ -1581,46 +1580,52 @@ function logout() {
   navigate('landing');
 }
 
-// ════════════════════════════════
-//  STATIC RENDERERS
-// ════════════════════════════════
-function renderNotices() {
+async function fetchNotices() {
   const grid = document.getElementById('noticesGrid');
-  if (!state.notices.length) {
-    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div>No notices posted yet</div>';
-    return;
-  }
-  grid.innerHTML = state.notices.map(n => `
-    <div class="notice-card">
-      <span class="notice-tag tag-${n.tag}">${n.tag}</span>
-      <div class="notice-title">${n.title}</div>
-      <div class="notice-body">${n.content}</div>
-      <div class="notice-meta">
-        <span>By ${n.author}</span>
-        <span>${n.date}</span>
+  try {
+    const res = await fetch('/api/notices');
+    const data = await res.json();
+    if (!data.notices || data.notices.length === 0) {
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div>No notices posted yet</div>';
+      return;
+    }
+    grid.innerHTML = data.notices.map(n => `
+      <div class="notice-card">
+        <span class="notice-tag tag-${n.tag}">${n.tag}</span>
+        <div class="notice-title">${n.title}</div>
+        <div class="notice-body">${n.content}</div>
+        <div class="notice-meta">
+          <span>By ${n.author}</span>
+          <span>${n.date}</span>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `).join('');
+  } catch (err) { console.error(err); }
 }
 
-function postNotice() {
+async function postNotice() {
   if (!isAdmin()) { showToast('Only admins can post notices'); return; }
   const title = document.getElementById('noticeTitle').value;
   const tag = document.getElementById('noticeTag').value;
   const content = document.getElementById('noticeContent').value;
   if (!title || !content) { showToast('Please fill all fields'); return; }
 
-  state.notices.unshift({
-    title, tag, content,
-    author: currentUser ? currentUser.name || 'Admin' : 'Admin',
-    date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-  });
-
-  document.getElementById('noticeTitle').value = '';
-  document.getElementById('noticeContent').value = '';
-  closeModal('notice-modal');
-  renderNotices();
-  showToast('Notice posted successfully');
+  try {
+    await fetch('/api/notices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title, tag, content,
+        author: currentUser ? currentUser.name || 'Admin' : 'Admin',
+        date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      })
+    });
+    document.getElementById('noticeTitle').value = '';
+    document.getElementById('noticeContent').value = '';
+    closeModal('notice-modal');
+    fetchNotices();
+    showToast('Notice posted successfully');
+  } catch (err) { showToast('Error posting notice'); console.error(err); }
 }
 
 function renderRooms(filter) {
@@ -1671,41 +1676,51 @@ function showRoomDetail(roomNum) {
   openModal('room-modal');
 }
 
-function renderLeaves() {
+async function fetchLeaves() {
   const list = document.getElementById('leaveList');
-  if (!state.leaves.length) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>No leave requests</div>';
-    return;
-  }
-  list.innerHTML = state.leaves.map((l, i) => `
-    <div class="leave-item">
-      <div class="leave-header">
-        <div>
-          <div class="leave-name">${l.name}</div>
-          <div style="font-size:12px;color:var(--text-muted)">${l.id}</div>
+  try {
+    const res = await fetch('/api/leaves');
+    const data = await res.json();
+    if (!data.leaves || data.leaves.length === 0) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>No leave requests</div>';
+      return;
+    }
+    list.innerHTML = data.leaves.map(l => `
+      <div class="leave-item">
+        <div class="leave-header">
+          <div>
+            <div class="leave-name">${l.name}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${l.id}</div>
+          </div>
+          <span class="status-pill pill-${l.status}">${l.status.charAt(0).toUpperCase() + l.status.slice(1)}</span>
         </div>
-        <span class="status-pill pill-${l.status}">${l.status.charAt(0).toUpperCase() + l.status.slice(1)}</span>
+        <div class="leave-dates">📅 ${l.from} → ${l.to}</div>
+        <div class="leave-reason">${l.reason}</div>
+        ${l.status === 'pending' && isAdmin() ? `
+          <div class="leave-actions">
+            <button class="action-btn approve-btn" onclick="updateLeave(${l.dbId},'approved')">✓ Approve</button>
+            <button class="action-btn reject-btn" onclick="updateLeave(${l.dbId},'rejected')">✕ Reject</button>
+          </div>
+        ` : ''}
       </div>
-      <div class="leave-dates">📅 ${l.from} → ${l.to}</div>
-      <div class="leave-reason">${l.reason}</div>
-      ${l.status === 'pending' && isAdmin() ? `
-        <div class="leave-actions">
-          <button class="action-btn approve-btn" onclick="updateLeave(${i},'approved')">✓ Approve</button>
-          <button class="action-btn reject-btn" onclick="updateLeave(${i},'rejected')">✕ Reject</button>
-        </div>
-      ` : ''}
-    </div>
-  `).join('');
+    `).join('');
+  } catch (err) { console.error(err); }
 }
 
-function updateLeave(index, status) {
+async function updateLeave(leaveId, status) {
   if (!isAdmin()) { showToast('Only admins can approve/reject leaves'); return; }
-  state.leaves[index].status = status;
-  renderLeaves();
-  showToast('Leave ' + status);
+  try {
+    await fetch('/api/leaves/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: leaveId, status })
+    });
+    fetchLeaves();
+    showToast('Leave ' + status);
+  } catch (err) { showToast('Error updating leave'); console.error(err); }
 }
 
-function submitLeave() {
+async function submitLeave() {
   const name = document.getElementById('leaveName').value;
   const id = document.getElementById('leaveId').value;
   const from = document.getElementById('leaveFrom').value;
@@ -1713,14 +1728,20 @@ function submitLeave() {
   const reason = document.getElementById('leaveReason').value;
   if (!name || !id || !from || !to || !reason) { showToast('Please fill all fields'); return; }
 
-  state.leaves.push({ name, id, from, to, reason, status: 'pending' });
-  document.getElementById('leaveName').value = '';
-  document.getElementById('leaveId').value = '';
-  document.getElementById('leaveFrom').value = '';
-  document.getElementById('leaveTo').value = '';
-  document.getElementById('leaveReason').value = '';
-  renderLeaves();
-  showToast('Leave application submitted');
+  try {
+    await fetch('/api/leaves', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, id, from, to, reason })
+    });
+    document.getElementById('leaveName').value = '';
+    document.getElementById('leaveId').value = '';
+    document.getElementById('leaveFrom').value = '';
+    document.getElementById('leaveTo').value = '';
+    document.getElementById('leaveReason').value = '';
+    fetchLeaves();
+    showToast('Leave application submitted');
+  } catch (err) { showToast('Error submitting leave'); console.error(err); }
 }
 
 function animateCounters() {

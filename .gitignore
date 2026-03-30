@@ -8,3 +8,4 @@ build/
 x64/
 CMakeCache.txt
 CMakeFiles/
+*.db
