@@ -652,12 +652,136 @@
   }
   .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
 
-  @media(max-width: 600px){
-    .topbar, #page-dashboard, #page-notice, #page-rooms,
-    #page-allocation, #page-leave, #page-complaints {
-      padding-left: 20px; padding-right: 20px;
+  /* ─── RESPONSIVE: TABLET (≤1024px) ─── */
+  @media(max-width: 1024px) {
+    .topbar {
+      padding: 20px 24px 0 56px;
     }
-    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    #page-dashboard, #page-notice, #page-rooms,
+    #page-allocation, #page-leave, #page-complaints {
+      padding-left: 24px; padding-right: 24px;
+    }
+    .metrics-grid { padding: 0 24px !important; }
+    #page-dashboard > div:last-child { padding: 28px 24px 0 24px !important; }
+    .allocation-grid, .leave-layout, .complaints-layout {
+      padding-left: 24px !important; padding-right: 24px !important;
+    }
+    #page-rooms > div:last-child { padding: 0 24px !important; }
+    .notices-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  }
+
+  /* ─── RESPONSIVE: MOBILE (≤768px) ─── */
+  @media(max-width: 768px) {
+    .topbar {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 20px 20px 0 20px;
+    }
+    .topbar-title { font-size: 22px; }
+    .topbar-right { width: 100%; }
+    .topbar-right .btn { flex: 1; justify-content: center; font-size: 13px; padding: 10px 14px; }
+
+    #page-dashboard, #page-notice, #page-rooms,
+    #page-allocation, #page-leave, #page-complaints {
+      padding: 20px 16px 32px 16px;
+    }
+    .metrics-grid {
+      grid-template-columns: 1fr 1fr !important;
+      padding: 0 16px !important;
+      gap: 12px;
+    }
+    #page-dashboard > div:last-child {
+      grid-template-columns: 1fr !important;
+      padding: 20px 16px 0 16px !important;
+    }
+
+    .allocation-grid { grid-template-columns: 1fr; padding: 0 16px !important; }
+    .leave-layout { grid-template-columns: 1fr; padding: 0 16px !important; }
+    .complaints-layout { grid-template-columns: 1fr; padding: 0 16px !important; }
+
+    .notices-grid {
+      grid-template-columns: 1fr;
+    }
+    .room-grid {
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+    #page-rooms > div:last-child { padding: 0 16px !important; }
+
+    .auth-card {
+      padding: 28px 20px;
+      border-radius: 18px;
+    }
+    .form-row { grid-template-columns: 1fr; }
+
+    .modal { padding: 24px 20px; max-width: 95vw; }
+
+    .toast {
+      left: 16px; right: 16px; bottom: 16px;
+    }
+
+    .landing-headline {
+      font-size: clamp(32px, 9vw, 56px);
+      letter-spacing: -1px;
+    }
+    .landing-sub { font-size: 15px; margin-bottom: 32px; }
+    .landing-actions { flex-direction: column; width: 100%; max-width: 300px; }
+    .landing-actions .btn { width: 100%; justify-content: center; }
+    .stats-row { gap: 24px; margin-top: 48px; }
+    .stat-num { font-size: 28px; }
+
+    .hamburger { top: 14px; left: 14px; }
+
+    .section-title { font-size: 18px; }
+    .panel { padding: 20px; }
+    .panel-title { font-size: 16px; }
+
+    .alloc-table th { font-size: 10px; padding: 8px 10px; }
+    .alloc-table td { font-size: 13px; padding: 10px; }
+
+    .metric-card { padding: 16px 18px; }
+    .metric-val { font-size: 26px; }
+    .metric-label { font-size: 12px; }
+
+    .card { padding: 18px; }
+  }
+
+  /* ─── RESPONSIVE: SMALL PHONE (≤480px) ─── */
+  @media(max-width: 480px) {
+    .topbar-title { font-size: 18px; }
+    .topbar-meta { font-size: 11px; }
+
+    .metrics-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .metric-card { padding: 14px 16px; }
+    .metric-val { font-size: 24px; }
+
+    .room-grid {
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    }
+    .room-num { font-size: 18px; }
+    .room-cell { padding: 14px 12px; }
+    .room-filters { gap: 6px; }
+    .filter-btn { padding: 6px 12px; font-size: 12px; }
+
+    .notice-card { padding: 18px; }
+    .notice-title { font-size: 15px; }
+    .notice-body { font-size: 13px; }
+
+    .leave-item { padding: 14px; }
+    .leave-name { font-size: 14px; }
+    .complaint-item { padding: 14px; }
+    .c-title { font-size: 14px; }
+
+    .btn { padding: 9px 16px; font-size: 13px; }
+    .btn-large { padding: 12px 24px; font-size: 14px; }
+
+    .landing-badge { font-size: 11px; padding: 5px 12px; }
+    .stats-row { gap: 16px; }
+    .stat-num { font-size: 24px; }
+    .stat-label { font-size: 11px; }
   }
 </style>
 </head>
