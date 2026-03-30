@@ -1,0 +1,11 @@
+build/
+.git/
+*.exe
+*.obj
+*.o
+*.pdb
+*.ilk
+CMakeCache.txt
+CMakeFiles/
+.vs/
+x64/

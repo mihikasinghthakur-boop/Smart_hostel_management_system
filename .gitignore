@@ -1,0 +1,10 @@
+build/
+*.exe
+*.obj
+*.o
+*.pdb
+*.ilk
+.vs/
+x64/
+CMakeCache.txt
+CMakeFiles/
