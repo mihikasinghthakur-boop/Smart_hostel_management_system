@@ -843,7 +843,7 @@
       </div>
       <div class="topbar-right">
         <button class="btn btn-ghost" onclick="navigate('rooms')">View Rooms</button>
-        <button class="btn btn-primary" onclick="navigate('allocation')">Allocate Room</button>
+        <button class="btn btn-primary" id="adminAllocBtn" onclick="navigate('allocation')">Allocate Room</button>
       </div>
     </div>
     <div class="metrics-grid stagger-in" style="padding:0 32px 0 72px">
@@ -909,10 +909,10 @@
       <div class="card">
         <div class="panel-title">Quick Actions</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <button class="btn btn-ghost" style="justify-content:flex-start;padding:14px" onclick="navigate('notice')">📢 Post Notice</button>
-          <button class="btn btn-ghost" style="justify-content:flex-start;padding:14px" onclick="navigate('allocation')">🔑 Allocate Room</button>
-          <button class="btn btn-ghost" style="justify-content:flex-start;padding:14px" onclick="navigate('leave')">✅ Review Leaves</button>
-          <button class="btn btn-ghost" style="justify-content:flex-start;padding:14px" onclick="navigate('complaints')">🔧 Fix Complaints</button>
+          <button class="btn btn-ghost admin-only" style="justify-content:flex-start;padding:14px" onclick="navigate('notice')">📢 Post Notice</button>
+          <button class="btn btn-ghost admin-only" style="justify-content:flex-start;padding:14px" onclick="navigate('allocation')">🔑 Allocate Room</button>
+          <button class="btn btn-ghost admin-only" style="justify-content:flex-start;padding:14px" onclick="navigate('leave')">✅ Review Leaves</button>
+          <button class="btn btn-ghost" style="justify-content:flex-start;padding:14px" onclick="navigate('complaints')">📝 My Complaints</button>
         </div>
       </div>
     </div>
@@ -925,7 +925,7 @@
         <div class="topbar-title">Notice <span>Board</span></div>
         <div class="topbar-meta">Announcements, events, and important updates</div>
       </div>
-      <button class="btn btn-primary" onclick="openModal('notice-modal')">+ Post Notice</button>
+      <button class="btn btn-primary admin-only" id="adminPostNoticeBtn" onclick="openModal('notice-modal')">+ Post Notice</button>
     </div>
 
     <div class="notices-grid stagger-in" id="noticesGrid">
@@ -967,7 +967,7 @@
       </div>
     </div>
     <div class="allocation-grid" style="padding:0 32px 0 72px">
-      <div class="panel">
+      <div class="panel admin-only" id="adminAllocPanel">
         <div class="panel-title">Allocate Room</div>
         <div class="form-group">
           <label class="form-label">Student ID</label>
@@ -1174,6 +1174,22 @@
 let loggedIn = false;
 let currentUser = null;
 
+// Admin role helper
+function isAdmin() {
+  return currentUser && currentUser.role === 'admin';
+}
+
+// Show/hide admin-only UI elements based on current role
+function updateAdminUI() {
+  const adminEls = document.querySelectorAll('.admin-only');
+  adminEls.forEach(el => {
+    el.style.display = isAdmin() ? '' : 'none';
+  });
+  // Dashboard allocate button
+  const allocBtn = document.getElementById('adminAllocBtn');
+  if (allocBtn) allocBtn.style.display = isAdmin() ? '' : 'none';
+}
+
 // Kept static for visual purposes (Leaves, Notices, Rooms)
 const state = {
   rooms: generateRooms(),
@@ -1226,6 +1242,8 @@ function navigate(page) {
   if (page === 'notice') renderNotices();
   if (page === 'leave') renderLeaves();
   if (page === 'landing') animateCounters();
+
+  updateAdminUI();
 }
 
 function toggleSidebar() {
@@ -1267,6 +1285,7 @@ async function fetchAllocations() {
 }
 
 async function allocateRoom() {
+  if (!isAdmin()) { showToast('Only admins can allocate rooms'); return; }
   const name = document.getElementById('allocStudentName').value;
   const id = document.getElementById('allocStudentId').value;
   const date = document.getElementById('allocDate').value || new Date().toISOString().split('T')[0];
@@ -1317,9 +1336,9 @@ async function fetchComplaints() {
           <span class="c-submitter">By ${c.name}</span>
           <span class="c-queue">Queue #${c.queue}</span>
         </div>
-        <div class="leave-actions" style="margin-top:12px">
+        ${isAdmin() ? `<div class="leave-actions" style="margin-top:12px">
           <button class="action-btn approve-btn" onclick="resolveOldestComplaint()">✓ Resolve Oldest (FIFO)</button>
-        </div>
+        </div>` : ''}
       </div>
     `).join('');
   } catch (err) { console.error(err); }
@@ -1346,6 +1365,7 @@ async function submitComplaint() {
 }
 
 async function resolveOldestComplaint() {
+  if (!isAdmin()) { showToast('Only admins can resolve complaints'); return; }
   const res = await fetch('/api/complaints/resolve', { method: 'POST' });
   if(res.ok) {
     showToast('Oldest complaint resolved via FIFO Queue');
@@ -1390,6 +1410,7 @@ function doLogin() {
   document.getElementById('userRole').textContent = role === 'admin' ? 'Administrator' : 'Student';
   document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
   showToast('Logged in as ' + name);
+  updateAdminUI();
   navigate('dashboard');
 }
 
@@ -1410,6 +1431,7 @@ function doRegister() {
   document.getElementById('userRole').textContent = 'Student';
   document.getElementById('userAvatar').textContent = first.charAt(0).toUpperCase();
   showToast('Account created successfully!');
+  updateAdminUI();
   navigate('dashboard');
 }
 
@@ -1421,6 +1443,7 @@ function guestLogin() {
   document.getElementById('userName').textContent = "Mihika";
   document.getElementById('userRole').textContent = "Admin";
   document.getElementById('userAvatar').textContent = "M";
+  updateAdminUI();
   navigate('dashboard');
 }
 
@@ -1430,6 +1453,7 @@ function logout() {
   document.getElementById('userChip').style.display = 'none';
   document.getElementById('logoutBtn').style.display = 'none';
   showToast('Signed out');
+  updateAdminUI();
   navigate('landing');
 }
 
@@ -1456,6 +1480,7 @@ function renderNotices() {
 }
 
 function postNotice() {
+  if (!isAdmin()) { showToast('Only admins can post notices'); return; }
   const title = document.getElementById('noticeTitle').value;
   const tag = document.getElementById('noticeTag').value;
   const content = document.getElementById('noticeContent').value;
@@ -1539,7 +1564,7 @@ function renderLeaves() {
       </div>
       <div class="leave-dates">📅 ${l.from} → ${l.to}</div>
       <div class="leave-reason">${l.reason}</div>
-      ${l.status === 'pending' ? `
+      ${l.status === 'pending' && isAdmin() ? `
         <div class="leave-actions">
           <button class="action-btn approve-btn" onclick="updateLeave(${i},'approved')">✓ Approve</button>
           <button class="action-btn reject-btn" onclick="updateLeave(${i},'rejected')">✕ Reject</button>
@@ -1550,6 +1575,7 @@ function renderLeaves() {
 }
 
 function updateLeave(index, status) {
+  if (!isAdmin()) { showToast('Only admins can approve/reject leaves'); return; }
   state.leaves[index].status = status;
   renderLeaves();
   showToast('Leave ' + status);
